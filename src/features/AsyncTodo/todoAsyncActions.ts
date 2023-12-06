@@ -3,31 +3,31 @@ import { Todo } from 'types';
 import { TodoSlice } from './asyncTodoSlice';
 
 export const fetchAllTodos = createAsyncThunk<
-  Todo[], // что вернуть
-  undefined, // что принимаем на вход
-  { state: { asyncTodos: TodoSlice } } // state
+  Todo[],
+  undefined,
+  { state: { asyncTodos: TodoSlice } }
 >(
   'todos/fetchTodos',
   async () => {
-    const response = await fetch(
-      'https://jsonplaceholder.typicode.com/todos?_limit=10'
-    );
+    const response = await fetch('https://jsonplaceholder.typicode.com/todos?_limit=10');
 
     return await response.json();
   },
   {
-    // не запускай action при определенных условиях (то же что асинхронная функция, { getState, extra })
-    condition: (_, { getState, extra }) => {
+    condition: (_, { getState }) => {
       const { status } = getState().asyncTodos;
 
       if (status === 'loading') {
         return false;
       }
     },
-  }
+  },
 );
 
-export const createTodo = createAsyncThunk<Todo, string>(
+export const createTodo = createAsyncThunk<
+  Todo,
+  string
+>(
   'todo/createTodo',
   async (text) => {
     const newTodo: Required<Omit<Todo, 'id'>> = {
@@ -45,5 +45,55 @@ export const createTodo = createAsyncThunk<Todo, string>(
     });
 
     return await response.json();
+  }
+);
+
+export const removeTodo = createAsyncThunk<
+  Todo['id'],
+  Todo['id'],
+  { rejectValue: string }
+>(
+  'todo/removeTodo',
+  async (id: Todo['id'], { rejectWithValue }) => {
+    const response = await fetch('https://jsonplaceholder.typicode.com/todos/'+id, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      return rejectWithValue('Impossible to delete todo with id ' + id);
+    }
+
+    return id;
+  },
+);
+
+export const toggleTodo = createAsyncThunk<
+  Todo,
+  Todo['id'],
+  { state: { asyncTodos: TodoSlice }, rejectValue: string }
+>(
+  'todo/toggleTodo',
+  async (id: Todo['id'], { getState, rejectWithValue }) => {
+    const todo = getState().asyncTodos.list.find(el => el.id === id);
+
+    if (todo) {
+      const response = await fetch('https://jsonplaceholder.typicode.com/todos/' + id, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          completed: !todo.completed,
+        }),
+      });
+
+      if (!response.ok) {
+        return rejectWithValue('Impossible to update todo with id ' + id);
+      }
+
+      return await response.json();
+    }
+
+    return rejectWithValue('No such todo with id ' + id);
   }
 );
