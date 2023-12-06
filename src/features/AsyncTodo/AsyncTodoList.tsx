@@ -1,22 +1,26 @@
 import { Todo } from 'types';
 import TodoItem from 'components/TodoItem';
-import { useAppDispatch, useAppSelector } from 'redux-hooks';
-import { removeTodo, toggleTodo } from './todoSlice';
-import { selectAllTodos } from './todoSelectors';
+import { useAppDispatch } from 'redux-hooks';
 import { useSelector } from 'react-redux';
+import { selectAsyncTodos } from './AsyncTodoSelectors';
+import { useEffect } from 'react';
+import { fetchAllTodos } from './todoAsyncActions';
 
-const TodoList = () => {
-  // const list = useAppSelector(selectAllTodos); этот вариант избыточен
-  const list = useSelector(selectAllTodos);
+const AsyncTodoList = () => {
+  const {list} = useSelector(selectAsyncTodos);
   const dispatch = useAppDispatch();
 
   const handleRemoveTodo = (id: Todo['id']) => {
-    dispatch(removeTodo(id));
+    // dispatch(removeTodo(id));
   }
 
   const handleToggleTodo = (id: Todo['id']) => {
-    dispatch(toggleTodo(id));
+    // dispatch(toggleTodo(id));
   }
+
+  useEffect(() => {
+    dispatch(fetchAllTodos());
+  }, [])
 
   return (
     <ul>
@@ -34,4 +38,4 @@ const TodoList = () => {
   );
 };
 
-export default TodoList;
+export default AsyncTodoList;
